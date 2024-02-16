@@ -55,12 +55,28 @@ void* checkColumn(void* param) {
 
 // Thread function to check all 3x3 subgrids
 void* checkSubGrid(void* param) {
-   int (*sudoku)[9] = param;
-   int startRow = /* Calculate based on passed param */;
-   int startCol = /* Calculate based on passed param */;
+    int subgridIndex = (int)(size_t)param;
+    int startRow = (subgridIndex / 3) * 3;
+    int startCol = (subgridIndex % 3) * 3;
+    
    // Logic to check 3x3 subgrid for numbers 1 through 9
+    int seen[10] = {0};
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            int num = sudoku[startRow + i][startCol + j];
+            if (num < 1 || num > 9 || seen[num]) {
+                printf("Invalid Sudoku: Column %d\n", j + 1);
+                valid +=1;
+                pthread_exit(NULL);
+            }
+            seen[num] = 1;
+        }
+    }
+   
    return NULL;
 }
+
+
 
 
 int main() {
