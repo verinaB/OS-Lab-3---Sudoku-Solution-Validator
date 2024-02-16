@@ -3,6 +3,8 @@
 #include <stdio.h>
 
 #define NUM_THREADS 11
+int valid = 0;
+
 int sudoku[9][9] = { 
     {5, 3, 4, 6, 7, 8, 9, 1, 2},
     {6, 7, 2, 1, 9, 5, 3, 4, 8},
@@ -18,14 +20,36 @@ int sudoku[9][9] = {
 // Thread function to check all rows
 void* checkRow(void* param) {
    int (*sudoku)[9] = param;
-   // Logic to check each row for numbers 1 through 9
+   for (int i = 0; i < 9; i++) {
+        int seen[10] = {0};
+        for (int j = 0; j < 9; j++) {
+            int num = sudoku[i][j];
+            if (num < 1 || num > 9 || seen[num]) {
+                printf("Invalid Sudoku: Row %d\n", i + 1);
+                valid +=1;
+                pthread_exit(NULL);
+            }
+            seen[num] = 1;
+        }
+    }
    return NULL; // Return NULL or a result structure
 }
 
 // Thread function to check all columns
 void* checkColumn(void* param) {
    int (*sudoku)[9] = param;
-   // Logic to check each column for numbers 1 through 9
+   for (int j = 0; j < 9; j++) {
+        int seen[10] = {0};
+        for (int i = 0; i < 9; i++) {
+            int num = sudoku[i][j];
+            if (num < 1 || num > 9 || seen[num]) {
+                printf("Invalid Sudoku: Column %d\n", j + 1);
+                valid +=1;
+                pthread_exit(NULL);
+            }
+            seen[num] = 1;
+        }
+    }
    return NULL;
 }
 
@@ -58,6 +82,9 @@ int main() {
     }
 
     // Add validation logic here to determine if the Sudoku is valid based on the threads' results
+    if (valid == 0){
+    	printf("Valid Sudoku!\n");
+    }
     
     return 0;
 }
