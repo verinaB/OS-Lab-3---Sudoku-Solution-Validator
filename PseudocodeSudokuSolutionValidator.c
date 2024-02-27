@@ -1,8 +1,12 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
+#define SIZE 9
 #define NUM_THREADS 11
+
+pthread_mutex_t lock;
 int valid = 0;
 
 int sudoku[9][9] = { 
@@ -17,90 +21,90 @@ int sudoku[9][9] = {
     {3, 4, 5, 2, 8, 6, 1, 7, 9}
 };
 
-// Thread function to check all rows
 void* checkRow(void* param) {
-   int (*sudoku)[9] = param;
-   for (int i = 0; i < 9; i++) {
+    int (*sudoku)[9] = param;
+    for (int i = 0; i < 9; i++) {
         int seen[10] = {0};
         for (int j = 0; j < 9; j++) {
             int num = sudoku[i][j];
             if (num < 1 || num > 9 || seen[num]) {
                 printf("Invalid Sudoku: Row %d\n", i + 1);
-                valid +=1;
+                pthread_mutex_lock(&lock);
+                valid += 1;
+                pthread_mutex_unlock(&lock);
                 pthread_exit(NULL);
             }
             seen[num] = 1;
         }
     }
-   return NULL; // Return NULL or a result structure
+    return NULL;
 }
 
-// Thread function to check all columns
 void* checkColumn(void* param) {
-   int (*sudoku)[9] = param;
-   for (int j = 0; j < 9; j++) {
+    int (*sudoku)[9] = param;
+    for (int j = 0; j < 9; j++) {
         int seen[10] = {0};
         for (int i = 0; i < 9; i++) {
             int num = sudoku[i][j];
             if (num < 1 || num > 9 || seen[num]) {
                 printf("Invalid Sudoku: Column %d\n", j + 1);
-                valid +=1;
+                pthread_mutex_lock(&lock);
+                valid += 1;
+                pthread_mutex_unlock(&lock);
                 pthread_exit(NULL);
             }
             seen[num] = 1;
         }
     }
-   return NULL;
+    return NULL;
 }
 
-// Thread function to check all 3x3 subgrids
 void* checkSubGrid(void* param) {
     int subgridIndex = (int)(size_t)param;
     int startRow = (subgridIndex / 3) * 3;
     int startCol = (subgridIndex % 3) * 3;
-    
-   // Logic to check 3x3 subgrid for numbers 1 through 9
+
     int seen[10] = {0};
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             int num = sudoku[startRow + i][startCol + j];
             if (num < 1 || num > 9 || seen[num]) {
-                printf("Invalid Sudoku: Column %d\n", j + 1);
-                valid +=1;
+                printf("Invalid Sudoku: Subgrid %d\n", subgridIndex + 1);
+                pthread_mutex_lock(&lock);
+                valid += 1;
+                pthread_mutex_unlock(&lock);
                 pthread_exit(NULL);
             }
             seen[num] = 1;
         }
     }
-   
-   return NULL;
+
+    return NULL;
 }
-
-
-
 
 int main() {
     pthread_t threads[NUM_THREADS];
+    pthread_mutex_init(&lock, NULL);
     int threadIndex = 0;
 
-    // Row & column checks
-    pthread_create(&threads[threadIndex++], NULL, checkRow, NULL);
-    pthread_create(&threads[threadIndex++], NULL, checkColumn, NULL);
+    pthread_create(&threads[threadIndex++], NULL, checkRow, (void*)sudoku);
+    pthread_create(&threads[threadIndex++], NULL, checkColumn, (void*)sudoku);
 
-    // Creating nine threads for each 3x3 subgrid validation (Subgrid checks)
     for(int i = 0; i < 9; i++) {
         pthread_create(&threads[threadIndex++], NULL, checkSubGrid, (void*)(size_t)i);
     }
 
-    // Waiting for all threads to complete
     for(int i = 0; i < NUM_THREADS; i++) {
         pthread_join(threads[i], NULL);
     }
 
-    // Add validation logic here to determine if the Sudoku is valid based on the threads' results
     if (valid == 0){
-    	printf("Valid Sudoku!\n");
+        printf("Valid Sudoku!\n");
+    } else {
+        printf("Sudoku is not valid.\n");
     }
+
+    pthread_mutex_destroy(&lock);
     
     return 0;
 }
